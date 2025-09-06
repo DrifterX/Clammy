@@ -122,7 +122,7 @@ func.calculateChanceOfBreak = function(clammy, remainingWeight)
 		}
 	elseif remainingWeight < 6 then
 		returnData = T {
-			color = {1.0, 0.0, 0.0, 1.0},
+			color = {1.0, 0.05, 0.0, 1.0},
 			percentWeight = (twentyWeightPercent + elevenWeightPercent + sevenWeightPercent + sixWeightPercent),
 		};
 	elseif remainingWeight < 7 then
@@ -147,8 +147,8 @@ func.calculateChanceOfBreak = function(clammy, remainingWeight)
 		};
 	end
 	if (clammy.bucketSize == 200) then
-		if (returnData.percentWeight == 0) then
-			returnData.percentWeight = 0.05;
+		if (returnData.percentWeight == 100) then
+			returnData.percentWeight = 100;
 		else
 			returnData.percentWeight = 1 - ((1 - returnData.percentWeight) * 0.95);
 		end
@@ -816,8 +816,17 @@ func.renderClammy = function(clammy)
 		end
 		if (Config.showPercentChanceToBreak[1] == true) then
 			local bucketBreakChance = func.calculateChanceOfBreak(clammy, (clammy.bucketSize - clammy.weight));
-			imgui.Text("Percent chance to break: "); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Percent chance to break:  "));
-			imgui.TextColored(bucketBreakChance.color, bucketBreakChance.percentWeight); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Percent chance to break:  " .. bucketBreakChance.percentWeight));
+			imgui.Text("Percent chance to break: "); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Percent chance to break:  ")); imgui.SetWindowFontScale(1.3); imgui.SetCursorPosY(imgui.GetCursorPosY()-2);
+			imgui.TextColored(bucketBreakChance.color, bucketBreakChance.percentWeight); imgui.SameLine(); imgui.SetWindowFontScale(1.0); imgui.SetCursorPosY(imgui.GetCursorPosY()+2);
+			if (string.len(bucketBreakChance.percentWeight) == 1) then
+				imgui.SetCursorPosX(imgui.CalcTextSize("Percent chance to break:   " .. bucketBreakChance.percentWeight));
+			elseif (string.len(bucketBreakChance.percentWeight) == 3) then
+				imgui.SetCursorPosX(imgui.CalcTextSize("Percent chance to break:    " .. bucketBreakChance.percentWeight));
+			elseif (string.len(bucketBreakChance.percentWeight) == 4) then
+				imgui.SetCursorPosX(imgui.CalcTextSize("Percent chance to break:    " .. bucketBreakChance.percentWeight));
+			elseif (string.len(bucketBreakChance.percentWeight) == 5) then
+				imgui.SetCursorPosX(imgui.CalcTextSize("Percent chance to break:    " .. bucketBreakChance.percentWeight));
+			end
 			imgui.Text("%");
 		end
 		if (Config.showValue[1] == true) then
