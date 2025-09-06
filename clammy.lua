@@ -23,7 +23,7 @@
 addon.author   = 'MathMatic/DrifterX';
 addon.name     = 'Clammy';
 addon.desc     = 'Clamming calculator: displays bucket weight, items in bucket, & approximate value.';
-addon.version  = '1.0';
+addon.version  = '1.0.2b';
 
 require('common');
 local const = require('constants');
@@ -47,6 +47,8 @@ local defaultConfig = T{
 	items = const.clammingItems,
 	splitItemsBySellType = T{ true, },
 	subtractBucketCostFromGilEarned = T{ true, },
+	showAverageTimePerBucket = T{ true, },
+	showPercentChanceToBreak = T{ true, },
 }
 Config = Settings.load(defaultConfig);
 
@@ -61,10 +63,13 @@ local clammy = T{
 	sessionValueNPC = 0,
 	sessionValueAH = 0,
 	bucketsPurchased = 0,
+	bucketsReceived = 0,
 	bucket = {},
 	trackingBucket = {},
 	cooldown = 0,
 	startingTime = os.clock(),
+	bucketStartTime = os.clock(),
+	bucketAverageTime = 0,
 	gilPerHour = 0,
 	gilPerHourNPC = 0,
 	gilPerHourAH = 0,

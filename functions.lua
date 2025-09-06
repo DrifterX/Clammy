@@ -49,6 +49,9 @@ func.emptyBucket = function(clammy, turnedIn, isReset)
 	clammy.trueSessionValueNPC = clammy.sessionValueNPC;
 	clammy.trueSessionValueAH = clammy.sessionValueAH;
 	clammy = func.updateGilPerHour(clammy);
+	if isReset == true then
+		clammy.bucketAverageTime = 0;
+	end
 	return clammy;
 end
 
@@ -82,6 +85,80 @@ func.updateGilPerHour = function(clammy)
 		clammy.gilPerHourAH = math.floor(clammy.trueSessionValueAH / ((now - clammy.startingTime) / 3600));
 	end
 	return clammy;
+end
+
+func.calculateTimePerBucket = function(clammy)
+	local now = os.clock();
+	local thisBucketTime = now - clammy.bucketStartTime;
+	if clammy.bucketAverageTime == 0 then
+		clammy.bucketAverageTime = thisBucketTime;
+	else
+		clammy.bucketAverageTime = (clammy.bucketAverageTime + thisBucketTime) / 2;
+	end
+	return clammy
+end
+
+func.calculateChanceOfBreak = function(clammy, remainingWeight)
+	local sixWeightPercent = 0;
+	local sevenWeightPercent = 0;
+	local elevenWeightPercent = 0;
+	local twentyWeightPercent = 0;
+	for _, item in ipairs(Config.items) do
+		if (item.weight == 20) then
+			twentyWeightPercent = twentyWeightPercent + item.rarity[1];
+		elseif (item.weight == 11) then
+			elevenWeightPercent = elevenWeightPercent + item.rarity[1];
+		elseif (item.weight == 7) then
+			sevenWeightPercent = sevenWeightPercent + item.rarity[1];
+		elseif (item.weight == 6) then
+			sixWeightPercent = sixWeightPercent + item.rarity[1];
+		end
+	end
+	local returnData = T{ };
+	if remainingWeight < 3 then
+	returnData = T {
+			color = {1.0, 0.0, 0.0, 1.0},
+			percentWeight = 100,
+		}
+	elseif remainingWeight < 6 then
+		returnData = T {
+			color = {1.0, 0.0, 0.0, 1.0},
+			percentWeight = (twentyWeightPercent + elevenWeightPercent + sevenWeightPercent + sixWeightPercent),
+		};
+	elseif remainingWeight < 7 then
+		returnData = T {
+			color = {1.0, 0.32, 0.0, 1.0},
+			percentWeight = (twentyWeightPercent + elevenWeightPercent + sevenWeightPercent),
+		};
+	elseif remainingWeight < 11 then
+		returnData = T {
+			color = {1.0, 0.98, 0.0, 1.0},
+			percentWeight = (twentyWeightPercent + elevenWeightPercent),
+		};
+	elseif remainingWeight < 20 then
+		returnData = T {
+			color = {0.0, 1.0, 0.098, 1.0},
+			percentWeight = twentyWeightPercent,
+		};
+	else
+		returnData = T {
+			color = {1.0, 1.0, 1.0, 1.0},
+			percentWeight = 0,
+		};
+	end
+	if (clammy.bucketSize == 200) then
+		if (returnData.percentWeight == 0) then
+			returnData.percentWeight = 0.05;
+		else
+			returnData.percentWeight = 1 - ((1 - returnData.percentWeight) * 0.95);
+		end
+	end
+	if (returnData.percentWeight == 0) or (returnData.percentWeight == 100) then
+		returnData.percentWeight = ("%0.0f"):fmt(returnData.percentWeight);
+	else
+		returnData.percentWeight = ("%.2f"):fmt(returnData.percentWeight * 100);
+	end
+	return returnData;
 end
 
 func.openLogFile = function(clammy, notBroken)
@@ -122,7 +199,7 @@ func.renderEditor = function(clammy)
     if (not clammy.editorIsOpen[1]) then
         return clammy;
     end
-    imgui.SetNextWindowSize({ 500, 465, });
+    imgui.SetNextWindowSize({ 500, 495, });
     imgui.SetNextWindowSizeConstraints({ 0, 0, }, { FLT_MAX, FLT_MAX, });
     if (imgui.Begin('Clammy##Config', clammy.editorIsOpen)) then
 
@@ -162,7 +239,7 @@ end
 
 func.renderGeneralConfig = function()
     imgui.Text('General Settings');
-    imgui.BeginChild('settings_general', { 0, 325, }, true);
+    imgui.BeginChild('settings_general', { 0, 375, }, true);
         imgui.Checkbox('Items in Bucket', Config.showItems);
         imgui.ShowHelp('Toggles whether items in current bucket should be shown.');
         imgui.Checkbox('Show Session Info', Config.showSessionInfo);
@@ -183,6 +260,10 @@ func.renderGeneralConfig = function()
         imgui.ShowHelp('Toggles if the clammy window should hide if not in Bibiki Bay.');
 		imgui.Checkbox('Show Profit', Config.subtractBucketCostFromGilEarned);
 		imgui.ShowHelp('Subtract cost of buckets from total clamming value amount.');
+		imgui.Checkbox('Show Time per Bucket', Config.showAverageTimePerBucket);
+		imgui.ShowHelp('Calculate and show average time per bucket received.');
+		imgui.Checkbox('Show % chance bucket break', Config.showPercentChanceToBreak);
+		imgui.ShowHelp('Calculates the chance that the next clamming attempt will break your bucket.');
 		imgui.SetNextItemWidth(100);
 		imgui.InputInt('High value amount', Config.highValue);
 		imgui.ShowHelp('Indicates when bucket weight turns red at less than 20 ponze of space remaining.');
@@ -196,7 +277,7 @@ func.renderGeneralConfig = function()
 end
 
 func.renderItemListConfig = function()
-    imgui.BeginChild("settings_items", {0, 325, }, true);
+    imgui.BeginChild("settings_items", {0, 375, }, true);
 		imgui.Text('    Item Value:');
 		imgui.ShowHelp('Set sale price of item.');
 		imgui.SameLine();
@@ -357,6 +438,7 @@ func.resetSession = function(clammy)
 	clammy.gilPerHourAH = 0;
 	clammy.gilPerHourNPC = 0;
 	clammy.bucketsPurchased = 0;
+	clammy.bucketsReceived = 0;
 	clammy.sessionValue = 0;
 	clammy.sessionValueAH = 0;
 	clammy.sessionValueNPC = 0;
@@ -385,6 +467,37 @@ func.formatInt = function(number)
     else
         return 'NaN';
     end
+end
+
+func.getTimestamp = function()
+    local pVanaTime = ashita.memory.find('FFXiMain.dll', 0, 'B0015EC390518B4C24088D4424005068', 0, 0);
+    local pointer = ashita.memory.read_uint32(pVanaTime + 0x34);
+    local rawTime = ashita.memory.read_uint32(pointer + 0x0C) + 92514960;
+    local timestamp = {};
+    timestamp.day = math.floor(rawTime / 3456);
+    timestamp.hour = math.floor(rawTime / 144) % 24;
+    timestamp.minute = math.floor((rawTime % 144) / 2.4);
+    return timestamp;
+end
+
+func.getMoon = function(clammy)
+    local timestamp = func.getTimestamp();
+    local moonIndex = ((timestamp.day + 26) % 84) + 1;
+    if (moonIndex < 43) then
+		clammy.moonTable.moonPercent = const.moonPhasePercent[moonIndex]  * -1;
+	else
+		clammy.moonTable.moonPercent = const.moonPhasePercent[moonIndex];
+	end
+    clammy.moonTable.moonPhase = const.moonPhase[moonIndex];
+    return clammy;
+end
+
+func.formatTimestamp = function(timer)
+    local hours = math.floor(timer / 3600);
+    local minutes = math.floor((timer / 60) - (hours * 60));
+    local seconds = math.floor(timer - (hours * 3600) - (minutes * 60));
+
+    return ('%0.2i:%0.2i:%0.2i'):fmt(hours, minutes, seconds);
 end
 
 func.toggleShowValue = function(shouldShowValue)
@@ -513,37 +626,6 @@ func.toggleTrackMoon = function(shouldShowMoon)
     Settings.save();
 end
 
-func.getTimestamp = function()
-    local pVanaTime = ashita.memory.find('FFXiMain.dll', 0, 'B0015EC390518B4C24088D4424005068', 0, 0);
-    local pointer = ashita.memory.read_uint32(pVanaTime + 0x34);
-    local rawTime = ashita.memory.read_uint32(pointer + 0x0C) + 92514960;
-    local timestamp = {};
-    timestamp.day = math.floor(rawTime / 3456);
-    timestamp.hour = math.floor(rawTime / 144) % 24;
-    timestamp.minute = math.floor((rawTime % 144) / 2.4);
-    return timestamp;
-end
-
-func.getMoon = function(clammy)
-    local timestamp = func.getTimestamp();
-    local moonIndex = ((timestamp.day + 26) % 84) + 1;
-    if (moonIndex < 43) then
-		clammy.moonTable.moonPercent = const.moonPhasePercent[moonIndex]  * -1;
-	else
-		clammy.moonTable.moonPercent = const.moonPhasePercent[moonIndex];
-	end
-    clammy.moonTable.moonPhase = const.moonPhase[moonIndex];
-    return clammy;
-end
-
-func.formatTimestamp = function(timer)
-    local hours = math.floor(timer / 3600);
-    local minutes = math.floor((timer / 60) - (hours * 60));
-    local seconds = math.floor(timer - (hours * 3600) - (minutes * 60));
-
-    return ('%0.2i:%0.2i:%0.2i'):fmt(hours, minutes, seconds);
-end
-
 func.handleChatCommands = function(args, clammy)
     if (#args == 1) then
 		clammy.editorIsOpen[1] = true;
@@ -627,20 +709,26 @@ func.handleTextIn = function(e, clammy)
     if (string.match(e.message, "You return the")) then
 		clammy = func.emptyBucket(clammy, true, false);
 		clammy.bucketColor = {1.0, 1.0, 1.0, 1.0};
+		clammy = func.calculateTimePerBucket(clammy);
 		return clammy;
 	end
 
 	if (string.match(e.message, "Obtained key item:")) then
 		clammy.bucketsPurchased = clammy.bucketsPurchased + 1;
+		clammy.bucketsReceived = clammy.bucketsReceived + 1;
 		clammy.hasBucket = true;
 		clammy.bucketIsBroke = false;
+		clammy.bucketStartTime = os.clock();
         return clammy;
 	end
 
 	--Your clamming capacity has increased to XXX ponzes!
 	if (string.match(e.message, "Your clamming capacity has increased to")) then
 		clammy.bucketSize = clammy.bucketSize + 50;
+		clammy.bucketsReceived = clammy.bucketsReceived + 1;
 		clammy.bucketColor = {1.0, 1.0, 1.0, 1.0};
+		clammy = func.calculateTimePerBucket(clammy);
+		clammy.bucketStartTime = os.clock();
 		return clammy;
 	end
 
@@ -648,6 +736,7 @@ func.handleTextIn = function(e, clammy)
 		clammy = func.emptyBucket(clammy, false, false);
 		clammy.bucketIsBroke = true;
 		clammy.bucketColor = {1.0, 1.0, 1.0, 1.0};
+		clammy = func.calculateTimePerBucket(clammy);
 		return clammy;
 	end
 
@@ -719,75 +808,85 @@ func.renderClammy = function(clammy)
 		imgui.SameLine();
 		imgui.SetCursorPosX(imgui.GetCursorPosX() + imgui.GetColumnWidth() - imgui.GetStyle().FramePadding.x - imgui.CalcTextSize("[999]"));
 		local cdTime = math.floor(clammy.cooldown - os.clock());
-		if Config.subtractBucketCostFromGilEarned[1] == true then
-			clammy.trueSessionValue = clammy.sessionValue - (clammy.bucketsPurchased * 500);
-		else
-			clammy.trueSessionValue = clammy.sessionValue
-		end
-		clammy.trueSessionValueNPC = clammy.sessionValueNPC;
-		clammy.trueSessionValueAH = clammy.sessionValueAH;
 		if (cdTime <= 0) then
 			imgui.TextColored({ 0.5, 1.0, 0.5, 1.0 }, "  [*]");
 			clammy = func.playSound(clammy);
 		else
 			imgui.TextColored({ 1.0, 1.0, 0.5, 1.0 }, "  [" .. cdTime .. "]");
 		end
-
+		if (Config.showPercentChanceToBreak[1] == true) then
+			local bucketBreakChance = func.calculateChanceOfBreak(clammy, (clammy.bucketSize - clammy.weight));
+			imgui.Text("Percent chance to break: "); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Percent chance to break:  "));
+			imgui.TextColored(bucketBreakChance.color, bucketBreakChance.percentWeight); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Percent chance to break:  " .. bucketBreakChance.percentWeight));
+			imgui.Text("%");
+		end
 		if (Config.showValue[1] == true) then
 			imgui.Text("Estimated Value: " .. func.formatInt(clammy.money));
 		end
 
 		local textColor = {0.0, 0.75, 0.60, 1};
 		if (Config.showSessionInfo[1] == true) then
+			if Config.subtractBucketCostFromGilEarned[1] == true then
+				clammy.trueSessionValue = clammy.sessionValue - (clammy.bucketsPurchased * 500);
+			else
+				clammy.trueSessionValue = clammy.sessionValue
+			end
+			clammy.trueSessionValueNPC = clammy.sessionValueNPC;
+			clammy.trueSessionValueAH = clammy.sessionValueAH;
 			imgui.Separator();
 			if(Config.subtractBucketCostFromGilEarned[1] == true) then
 				imgui.Text("Gil made"); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Gil made  "));
 				imgui.TextColored(textColor,"(Profit)"); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Gil made  (Profit)"));
-				imgui.Text(":"); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Total gil earned(NPC):  "));
-				imgui.Text("".. func.formatInt(clammy.sessionValue)); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Total gil earned(NPC):  " .. func.formatInt(clammy.sessionValue) .. " "));
+				imgui.Text(":"); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Total gil earned(NPC):   "));
+				imgui.Text("".. func.formatInt(clammy.sessionValue)); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Total gil earned(NPC):   " .. func.formatInt(clammy.sessionValue) .. " "));
 				imgui.TextColored(textColor, "(" .. func.formatInt(clammy.trueSessionValue) .. ")");
 			else
-				imgui.Text("Gil made: "); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Total gil earned(NPC):  "));
+				imgui.Text("Gil made: "); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Total gil earned(NPC):   "));
 				imgui.Text("" .. func.formatInt(clammy.trueSessionValue));
 			end
-			
+
 			if (Config.splitItemsBySellType[1] == true) then
-				imgui.Text("Total gil earned(NPC): "); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Total gil earned(NPC):  "));
+				imgui.Text("Total gil earned(NPC): "); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Total gil earned(NPC):   "));
 				imgui.Text("" .. func.formatInt(clammy.trueSessionValueNPC));
-				imgui.Text("Total gil earned(AH): "); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Total gil earned(NPC):  "));
+				imgui.Text("Total gil earned(AH): "); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Total gil earned(NPC):   "));
 				imgui.Text("" .. func.formatInt(clammy.trueSessionValueAH));
 			end
 			if(Config.subtractBucketCostFromGilEarned[1] == true) then
 				imgui.Text("Gil/hr"); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Gil/hr  "));
 				imgui.TextColored(textColor, "(Profit)"); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Gil/hr  (Profit)"));
-				imgui.Text(":"); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Total gil earned(NPC):  "));
-				imgui.Text(""  .. func.formatInt(clammy.gilPerHour)) imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Total gil earned(NPC):  "   .. func.formatInt(clammy.gilPerHour) .. " "));
+				imgui.Text(":"); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Total gil earned(NPC):   "));
+				imgui.Text(""  .. func.formatInt(clammy.gilPerHour)) imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Total gil earned(NPC):   "   .. func.formatInt(clammy.gilPerHour) .. " "));
 				imgui.TextColored(textColor, "(" .. func.formatInt(clammy.gilPerHourMinusBucket) .. ")");
 			else
-				imgui.Text("Gil/hr: "); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Total gil earned(NPC):  "));
+				imgui.Text("Gil/hr: "); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Total gil earned(NPC):   "));
 				imgui.Text("" .. func.formatInt(clammy.gilPerHour));
 			end
 			if (Config.splitItemsBySellType[1] == true) then
-				imgui.Text("Gil/hr(NPC): "); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Total gil earned(NPC):  "));
+				imgui.Text("Gil/hr(NPC): "); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Total gil earned(NPC):   "));
 				imgui.Text("" .. func.formatInt(clammy.gilPerHourNPC));
-				imgui.Text("Gil/hr(AH): "); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Total gil earned(NPC):  "));
+				imgui.Text("Gil/hr(AH): "); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Total gil earned(NPC):   "));
 				imgui.Text("" .. func.formatInt(clammy.gilPerHourAH));
 			end
 			imgui.Separator();
-			
+
 			if (Config.subtractBucketCostFromGilEarned[1] == true) then
 				local bucketCost = clammy.bucketsPurchased * 500;
-				imgui.Text("Buckets"); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Buckets  "));
-				imgui.TextColored(textColor, "(Gil spent)"); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Buckets  (Gil spent)"));
-				imgui.Text(":   " .. clammy.bucketsPurchased); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Buckets  (Gil spent):   " .. clammy.bucketsPurchased));
-				imgui.TextColored(textColor, " (" .. func.formatInt(bucketCost) .. ")");
+				imgui.Text("Buckets"); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Buckets "));
+				imgui.TextColored(textColor, "(Bought)(Spent)"); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Buckets (Bought)(Spent)"));
+				imgui.Text(": " .. clammy.bucketsReceived); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Buckets  Bought)(Gil):    " .. clammy.bucketsReceived));
+				imgui.TextColored(textColor, "(".. func.formatInt(clammy.bucketsPurchased) .. ")(" .. func.formatInt(bucketCost) .. ")");
 			else
-				
+
 				imgui.Text("Buckets : "); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Buckets  (Gil spent):   "));
 				imgui.Text("" .. clammy.bucketsPurchased);
 			end
 			local now = os.clock();
-			imgui.Text("Session length: " .. func.formatTimestamp(now - clammy.startingTime));
+			imgui.Text("Session length:"); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Buckets (Bought)(Spent): "));
+			imgui.Text("".. func.formatTimestamp(now - clammy.startingTime))
+			if Config.showAverageTimePerBucket[1] == true then
+				imgui.Text('Avg time/bucket:'); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Buckets (Bought)(Spent): "));
+				imgui.Text('' .. func.formatTimestamp(clammy.bucketAverageTime));
+			end
 		end
 		if (Config.trackMoonPhase[1] == true) then
 			imgui.Separator();

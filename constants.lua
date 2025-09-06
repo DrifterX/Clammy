@@ -174,41 +174,41 @@ local constants = T{
     };
 
     clammingItems = {
-        { item="Bibiki slug",				weight=3,	gil=T{10}, 	vendor = {true}},
-        { item="Bibiki urchin", 			weight=6,	gil=T{750}, 	vendor = {true}},
-        { item="Broken willow fishing rod",	weight=6,	gil=T{0}, 		vendor = {false}},
-        { item="Coral fragment",			weight=6,	gil=T{1750}, 	vendor = {true}},
-        { item="Quality crab shell",	    weight=6,	gil=T{3312}, 	vendor = {true}}, --Note: For some reason using "High-quality" doesn't register properly, leave as "Quality" for the time being
-        { item="Crab shell",				weight=6,	gil=T{371}, 	vendor = {true}},  --Make sure HQ version is listed above NQ for proper registering of item
-        { item="Elshimo coconut", 			weight=6,	gil=T{44}, 	vendor = {true}},
-        { item="Elm log", 					weight=6,	gil=T{4000}, 	vendor = {false}}, --Based on estimated AH value
-        { item="Fish scales",				weight=3,	gil=T{24}, 	vendor = {true}},
-        { item="Goblin armor",				weight=6,	gil=T{0}, 		vendor = {false}},   --Based on estimated AH value
-        { item="Goblin mail", 				weight=6,	gil=T{1000}, 	vendor = {false}}, --Based on estimated AH value
-        { item="Goblin mask", 				weight=6,	gil=T{0}, 		vendor = {false}},  --Based on estimated AH value
-        { item="Hobgoblin bread", 			weight=6,	gil=T{91}, 	vendor = {true}},
-        { item="Hobgoblin pie", 			weight=6,	gil=T{150}, 	vendor = {true}},
-        { item="Igneous rock", 				weight=35,	gil=T{178}, 	vendor = {true}},
-        { item="Jacknife", 					weight=11,	gil=T{53}, 	vendor = {true}},
-        { item="Lacquer tree log", 			weight=6,	gil=T{6000}, 	vendor = {false}}, --Based on estimated AH value
-        { item="Maple log", 				weight=6,	gil=T{15}, 	vendor = {true}},
-        { item="Nebimonite", 				weight=6,	gil=T{53}, 	vendor = {true}},
-        { item="Oxblood", 					weight=6,	gil=T{13250}, 	vendor = {true}},
-        { item="Pamamas", 					weight=6,	gil=T{20}, 	vendor = {true}},
-        { item="Pamtam kelp", 				weight=6,	gil=T{8}, 		vendor = {true}},
-        { item="Pebble", 					weight=7,	gil=T{1}, 		vendor = {true}},
-        { item="Petrified log", 			weight=6,	gil=T{2193}, 	vendor = {true}}, 
-        { item="Quality pugil scales",		weight=6,	gil=T{260}, 	vendor = {true}},  --Note: For some reason using "High-quality" doesn't register properly, leave as "Quality" for the time being
-        { item="Pugil scales", 				weight=3,	gil=T{23}, 	vendor = {true}},   --Make sure HQ version is listed above NQ for proper registering of item
-        { item="Rock salt",					weight=6,	gil=T{3}, 		vendor = {true}},
-        { item="Seashell", 					weight=6,	gil=T{30}, 	vendor = {true}},
-        { item="Shall shell",				weight=6,	gil=T{300}, 	vendor = {true}},
-        { item="Titanictus shell", 			weight=6,	gil=T{350}, 	vendor = {true}},
-        { item="Tropical clam", 			weight=20,	gil=T{5100}, 	vendor = {true}},
-        { item="Turtle shell", 				weight=6,	gil=T{1224}, 	vendor = {true}},
-        { item="Uragnite shell", 			weight=6,	gil=T{1455}, 	vendor = {true}},
-        { item="Vongola clam", 				weight=6,	gil=T{192}, 	vendor = {true}},
-        { item="White sand",				weight=7,	gil=T{250}, 	vendor = {true}},
+        { item = "Bibiki slug",				    weight = 3,	    gil = T{10}, 	vendor = {true},    rarity = T{0.0914730728616684},  },
+        { item = "Bibiki urchin", 			    weight = 6,	    gil = T{750}, 	vendor = {true},    rarity = T{0.0114836325237592},  },
+        { item = "Broken willow fishing rod",	weight = 6,	    gil = T{0}, 	vendor = {false},   rarity = T{0.020987328405491},   },
+        { item = "Coral fragment",			    weight = 6,	    gil = T{1750}, 	vendor = {true},    rarity = T{0.0109556494192186},  },
+        { item = "Quality crab shell",	        weight = 6,	    gil = T{3312}, 	vendor = {true},    rarity = T{0.00554382259767687}, }, --Note: For some reason using "High-quality" doesn't register properly, leave as "Quality" for the time being
+        { item = "Crab shell",				    weight = 6,	    gil = T{371}, 	vendor = {true},    rarity = T{0.0261351636747624},  },  --Make sure HQ version is listed above NQ for proper registering of item
+        { item = "Elshimo coconut",             weight = 6,     gil = T{44},    vendor = {true},    rarity = T{0.0000000000000000},  },
+        { item = "Elm log", 					weight = 6,	    gil = T{4000}, 	vendor = {false},   rarity = T{0.00686378035902851}, }, --Based on estimated AH value
+        { item = "Fish scales",				    weight = 3,	    gil = T{24}, 	vendor = {true},    rarity = T{0.0479144667370644},  },
+        { item = "Goblin armor",				weight = 6,	    gil = T{0}, 	vendor = {false},   rarity = T{0.0213833157338965},  },   --Based on estimated AH value
+        { item = "Goblin mail", 				weight = 6,	    gil = T{1000}, 	vendor = {false},   rarity = T{0.0236272439281943},  }, --Based on estimated AH value
+        { item = "Goblin mask", 				weight = 6,	    gil = T{0}, 	vendor = {false},   rarity = T{0.0220432946145723},  },  --Based on estimated AH value
+        { item = "Hobgoblin bread", 			weight = 6,	    gil = T{91}, 	vendor = {true},    rarity = T{0.0250791974656811},  },
+        { item = "Hobgoblin pie", 			    weight = 6,	    gil = T{150}, 	vendor = {true},    rarity = T{0.0236272439281943},  },
+        { item = "Igneous rock", 				weight = 35,	gil = T{178}, 	vendor = {true},    rarity = T{0.0000000000000000},  },
+        { item = "Jacknife", 					weight = 11,	gil = T{53}, 	vendor = {true},    rarity = T{0.0910770855332629},  },
+        { item = "Lacquer tree log", 			weight = 6,	    gil = T{6000}, 	vendor = {false},   rarity = T{0.00356388595564942}, }, --Based on estimated AH value
+        { item = "Maple log", 				    weight = 6,	    gil = T{15}, 	vendor = {true},    rarity = T{0.0147835269271383},  },
+        { item = "Nebimonite", 				    weight = 6,	    gil = T{53}, 	vendor = {true},    rarity = T{0.0229672650475185},  },
+        { item = "Oxblood", 					weight = 6,	    gil = T{13250}, vendor = {true},    rarity = T{0.00422386483632524}, },
+        { item = "Pamamas", 					weight = 6,	    gil = T{20}, 	vendor = {true},    rarity = T{0.0000000000000000},  },
+        { item = "Pamtam kelp", 				weight = 6,	    gil = T{8}, 	vendor = {true},    rarity = T{0.0616420274551214},  },
+        { item = "Pebble", 					    weight = 7,	    gil = T{1}, 	vendor = {true},    rarity = T{0.193109820485744},   },
+        { item = "Petrified log", 			    weight = 6,	    gil = T{2193}, 	vendor = {true},    rarity = T{0.00422386483632524}, },
+        { item = "Quality pugil scales",		weight = 6,	    gil = T{260}, 	vendor = {true},    rarity = T{0.0159714889123548},  },  --Note: For some reason using "High-quality" doesn't register properly, leave as "Quality" for the time being
+        { item = "Pugil scales", 				weight = 3,	    gil = T{23}, 	vendor = {true},    rarity = T{0.0450105596620908},  },   --Make sure HQ version is listed above NQ for proper registering of item
+        { item = "Rock salt",					weight = 6,	    gil = T{3}, 	vendor = {true},    rarity = T{0.0000000000000000},  },
+        { item = "Seashell", 					weight = 6,	    gil = T{30}, 	vendor = {true},    rarity = T{0.0258711721224921},  },
+        { item = "Shall shell",				    weight = 6,	    gil = T{300}, 	vendor = {true},    rarity = T{0.051610348468849},   },
+        { item = "Titanictus shell", 			weight = 6,	    gil = T{350}, 	vendor = {true},    rarity = T{0.0167634635691658},  },
+        { item = "Tropical clam", 			    weight = 20,	gil = T{5100}, 	vendor = {true},    rarity = T{0.012935586061246},   },
+        { item = "Turtle shell", 				weight = 6,	    gil = T{1224}, 	vendor = {true},    rarity = T{0.0126715945089757},  },
+        { item = "Uragnite shell", 			    weight = 6,	    gil = T{1455}, 	vendor = {true},    rarity = T{0.00303590285110876}, },
+        { item = "Vongola clam", 				weight = 6,	    gil = T{192}, 	vendor = {true},    rarity = T{0.0566261879619852},  },
+        { item = "White sand",				    weight = 7,	    gil = T{250}, 	vendor = {true},    rarity = T{0.0267951425554382},  },
     };
 }
 
