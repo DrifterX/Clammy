@@ -69,8 +69,12 @@ func.writeBucket = function(clammy, item)
 end
 
 func.playSound = function(clammy)
+	local waveFile = 'clam.wave';
+	if (clammy.stopSound == true) then
+		waveFile = 'stop.wave';
+	end
 	if (Config.tone[1] == true) and (clammy.playTone == true) then
-		ashita.misc.play_sound(addon.path:append("clam.wav"));
+		ashita.misc.play_sound(addon.path:append(waveFile));
 		clammy.playTone = false;
 	end
     return clammy;
@@ -90,10 +94,11 @@ end
 func.calculateTimePerBucket = function(clammy)
 	local now = os.clock();
 	local thisBucketTime = now - clammy.bucketStartTime;
+	clammy.bucketTimeWith = clammy.bucketTimeWith + thisBucketTime;
 	if clammy.bucketAverageTime == 0 then
 		clammy.bucketAverageTime = thisBucketTime;
 	else
-		clammy.bucketAverageTime = (clammy.bucketAverageTime + thisBucketTime) / 2;
+		clammy.bucketAverageTime = (clammy.bucketTimeWith / clammy.bucketsReceived);
 	end
 	return clammy
 end
@@ -763,8 +768,10 @@ func.handleTextIn = function(e, clammy)
 						(clammy.money >= clammy.highValue and relativeWeight < 20) or
 						(clammy.weight > 130) then
 						clammy.bucketColor = {1.0, 0.1, 0.0, 1.0};
+						clammy.stopSound = true;
 					else
 						clammy.bucketColor = {1.0, 1.0, 1.0, 1.0};
+						clammy.stopSound = false;
 					end
 				end
 
@@ -885,7 +892,6 @@ func.renderClammy = function(clammy)
 				imgui.Text(": " .. clammy.bucketsReceived); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Buckets  Bought)(Gil):    " .. clammy.bucketsReceived));
 				imgui.TextColored(textColor, "(".. func.formatInt(clammy.bucketsPurchased) .. ")(" .. func.formatInt(bucketCost) .. ")");
 			else
-
 				imgui.Text("Buckets : "); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Buckets  (Gil spent):   "));
 				imgui.Text("" .. clammy.bucketsPurchased);
 			end
