@@ -23,7 +23,7 @@
 addon.author   = 'MathMatic/DrifterX';
 addon.name     = 'Clammy';
 addon.desc     = 'Clamming calculator: displays bucket weight, items in bucket, & approximate value.';
-addon.version  = '1.0.2b';
+addon.version  = '1.0.4b';
 
 require('common');
 local const = require('constants');
@@ -35,9 +35,9 @@ local defaultConfig = T{
 	showItems = T{ true, },
 	showValue = T{ true, },
 	showSessionInfo = T{ true, },
-	logAllResults = T{ true, },
 	log = T{ false, },
 	tone = T{ false, },
+	useStopTone = T{ true, },
 	trackMoonPhase = T{ true, },
 	colorWeightBasedOnValue = T{ true, },
 	hideInDifferentZone = T{ true, },
@@ -49,6 +49,7 @@ local defaultConfig = T{
 	subtractBucketCostFromGilEarned = T{ true, },
 	showAverageTimePerBucket = T{ true, },
 	showPercentChanceToBreak = T{ true, },
+	legacyLog = T{ false, }
 }
 Config = Settings.load(defaultConfig);
 

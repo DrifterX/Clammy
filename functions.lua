@@ -15,7 +15,7 @@ func.emptyBucket = function(clammy, turnedIn, isReset)
 		clammy.bucket[idx] = 0;
 	end
 	if (isReset == false) then
-        if (Config.log[1] == true) and (Config.logAllResults[1] == false) then
+        if (Config.log[1] == true) and (Config.legacyLog[1] == false) then
             local file = func.openLogFile(clammy, turnedIn);
             for _,row in ipairs(clammy.trackingBucket) do
                 if turnedIn == true then
@@ -69,9 +69,9 @@ func.writeBucket = function(clammy, item)
 end
 
 func.playSound = function(clammy)
-	local waveFile = 'clam.wave';
+	local waveFile = 'clam.wav';
 	if (clammy.stopSound == true) then
-		waveFile = 'stop.wave';
+		waveFile = 'stop.wav';
 	end
 	if (Config.tone[1] == true) and (clammy.playTone == true) then
 		ashita.misc.play_sound(addon.path:append(waveFile));
@@ -190,7 +190,7 @@ func.closeLogFile = function(file)
 end
 
 func.writeLogFile = function(clammy, item)
-	local file = func.openLogFile(clammy);
+	local file = func.openLogFile(clammy, true);
 
 	if (file ~= nil) then
 		local fdata = ('%s, %s %s\n'):fmt(os.date('%Y-%m-%d %H:%M:%S'), item.item, item.gil[1]);
@@ -204,7 +204,7 @@ func.renderEditor = function(clammy)
     if (not clammy.editorIsOpen[1]) then
         return clammy;
     end
-    imgui.SetNextWindowSize({ 500, 495, });
+    imgui.SetNextWindowSize({ 500, 515, });
     imgui.SetNextWindowSizeConstraints({ 0, 0, }, { FLT_MAX, FLT_MAX, });
     if (imgui.Begin('Clammy##Config', clammy.editorIsOpen)) then
 
@@ -244,7 +244,7 @@ end
 
 func.renderGeneralConfig = function()
     imgui.Text('General Settings');
-    imgui.BeginChild('settings_general', { 0, 375, }, true);
+    imgui.BeginChild('settings_general', { 0, 400, }, true);
         imgui.Checkbox('Items in Bucket', Config.showItems);
         imgui.ShowHelp('Toggles whether items in current bucket should be shown.');
         imgui.Checkbox('Show Session Info', Config.showSessionInfo);
@@ -253,10 +253,16 @@ func.renderGeneralConfig = function()
 		imgui.ShowHelp('Toggles whether session info should show split between items sold to vendor and items sold to AH.');
 		imgui.Checkbox('Log Results', Config.log);
         imgui.ShowHelp('Toggles if Clammy should create a log file.');
-        imgui.Checkbox('All Results', Config.logAllResults);
-        imgui.ShowHelp('Deprecated: Ensures logs work exactly as they did in original version for compatibility.');
+		if (Config.log[1] == true) then
+			imgui.SetCursorPosX(20); imgui.Checkbox('Legacy logging', Config.legacyLog);
+        	imgui.ShowHelp('Use if you want to maintain consistent logging with 0.4 version or earlier.');
+		end
         imgui.Checkbox('Play Tone', Config.tone);
         imgui.ShowHelp('Toggles if Clammy should play a tone when you can clam again.');
+		if (Config.tone[1] == true) then
+			imgui.SetCursorPosX(20); imgui.Checkbox('Stop Tone', Config.useStopTone);
+			imgui.ShowHelp('Play separate tone when at recommended turn in weight.')
+		end
         imgui.Checkbox('Track Moon Info', Config.trackMoonPhase);
         imgui.ShowHelp('Toggles if moon phase should be tracked and shown.');
         imgui.Checkbox('Set Weight Color Based On Value', Config.colorWeightBasedOnValue);
@@ -518,12 +524,12 @@ end
 
 func.toggleLogAllResults = function(shouldLogAllResults)
 	if (shouldLogAllResults == "true") or
-        (shouldLogAllResults == nil and Config.logAllResults[1] == false) then
-		Config.logAllResults[1] = true;
+        (shouldLogAllResults == nil and Config.legacyLog[1] == false) then
+		Config.legacyLog[1] = true;
 		print(chat.header(addon.name):append(chat.message('Logging all items.')));
 	elseif(shouldLogAllResults == "false") or
-        (shouldLogAllResults == nil and Config.logAllResults[1] == true) then
-		Config.logAllResults[1] = false;
+        (shouldLogAllResults == nil and Config.legacyLog[1] == true) then
+		Config.legacyLog[1] = false;
 		print(chat.header(addon.name):append(chat.message('Logging only items actually received.')));
 	end
 
@@ -768,7 +774,9 @@ func.handleTextIn = function(e, clammy)
 						(clammy.money >= clammy.highValue and relativeWeight < 20) or
 						(clammy.weight > 130) then
 						clammy.bucketColor = {1.0, 0.1, 0.0, 1.0};
-						clammy.stopSound = true;
+						if (Config.useStopTone[1] == true) then
+							clammy.stopSound = true;
+						end
 					else
 						clammy.bucketColor = {1.0, 1.0, 1.0, 1.0};
 						clammy.stopSound = false;
@@ -777,7 +785,7 @@ func.handleTextIn = function(e, clammy)
 
 				clammy.playTone = true;
 
-				if (Config.log[1] == true) and (Config.logAllResults[1] == true) then
+				if (Config.log[1] == true) and (Config.legacyLog[1] == true) then
 					clammy.writeLogFile(citem);
 				end
 
@@ -815,6 +823,9 @@ func.renderClammy = function(clammy)
 		imgui.SameLine();
 		imgui.SetCursorPosX(imgui.GetCursorPosX() + imgui.GetColumnWidth() - imgui.GetStyle().FramePadding.x - imgui.CalcTextSize("[999]"));
 		local cdTime = math.floor(clammy.cooldown - os.clock());
+		if (Config.useStopTone[1] == true and clammy.stopSound == true) then
+			cdTime = cdTime - 8;
+		end
 		if (cdTime <= 0) then
 			imgui.TextColored({ 0.5, 1.0, 0.5, 1.0 }, "  [*]");
 			clammy = func.playSound(clammy);
