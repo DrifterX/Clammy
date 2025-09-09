@@ -54,10 +54,8 @@ local defaultConfig = T{
 Config = Settings.load(defaultConfig);
 
 local clammy = T{
-	lowValue = Config.lowValue[1],
-	midValue = Config.midValue[1],
-	highValue = Config.highValue[1],
 	bucketSize = 50,
+	relativeWeight = 50,
 	weight = 0,
 	money  = 0,
 	sessionValue = 0,

@@ -166,6 +166,23 @@ func.calculateChanceOfBreak = function(clammy, remainingWeight)
 	return returnData;
 end
 
+func.calcRedBucket = function(clammy)
+	if  (clammy.relativeWeight < 6) or
+		(clammy.money >= Config.lowValue[1] and clammy.relativeWeight < 7) or
+		(clammy.money >= Config.midValue[1] and clammy.relativeWeight < 11) or
+		(clammy.money >= Config.highValue[1] and clammy.relativeWeight < 20) or
+		(clammy.weight > 130) then
+			clammy.bucketColor = {1.0, 0.1, 0.0, 1.0};
+			if (Config.useStopTone[1] == true) then
+				clammy.stopSound = true;
+			end
+	else
+		clammy.bucketColor = {1.0, 1.0, 1.0, 1.0};
+		clammy.stopSound = false;
+	end
+	return clammy;
+end
+
 func.openLogFile = function(clammy, notBroken)
 	if (ashita.fs.create_directory(clammy.fileDir) ~= false) then
         local file;
@@ -767,20 +784,7 @@ func.handleTextIn = function(e, clammy)
 						end
 					end
 				else
-					local relativeWeight = clammy.bucketSize - clammy.weight;
-					if  (relativeWeight < 6) or
-						(clammy.money >= clammy.lowValue and relativeWeight < 7) or
-						(clammy.money >= clammy.midValue and relativeWeight < 11) or
-						(clammy.money >= clammy.highValue and relativeWeight < 20) or
-						(clammy.weight > 130) then
-						clammy.bucketColor = {1.0, 0.1, 0.0, 1.0};
-						if (Config.useStopTone[1] == true) then
-							clammy.stopSound = true;
-						end
-					else
-						clammy.bucketColor = {1.0, 1.0, 1.0, 1.0};
-						clammy.stopSound = false;
-					end
+					clammy.relativeWeight = clammy.bucketSize - clammy.weight;
 				end
 
 				clammy.playTone = true;
@@ -813,6 +817,7 @@ func.renderClammy = function(clammy)
 		if (Config.trackMoonPhase[1] == true) then
 			clammy = func.getMoon(clammy);
 		end
+		clammy = func.calcRedBucket(clammy);
 		imgui.SameLine()
 		imgui.Text("Weight [" .. clammy.bucketSize .. "]:");
 		imgui.SameLine();
