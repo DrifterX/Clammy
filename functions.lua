@@ -172,10 +172,28 @@ func.calcRedBucket = function(clammy)
 		(clammy.money >= Config.midValue[1] and clammy.relativeWeight < 11) or
 		(clammy.money >= Config.highValue[1] and clammy.relativeWeight < 20) or
 		(clammy.weight > 130) then
+		if (Config.alwaysStopAtThirdBucket[1] == true) then
 			clammy.bucketColor = {1.0, 0.1, 0.0, 1.0};
 			if (Config.useStopTone[1] == true) then
 				clammy.stopSound = true;
 			end
+		elseif (Config.alwaysStopAtThirdBucket[1] == false) then
+			local modifiedLowValue = math.floor(Config.lowValue[1] * 0.95);
+			local modifiedMidValue = math.floor(Config.midValue[1] * 0.95);
+			local modifiedHighValue = math.floor(Config.highValue[1] * 0.95);
+			if (clammy.relativeWeight < 6) or
+				(clammy.money >= modifiedLowValue and clammy.relativeWeight < 7) or
+				(clammy.money >= modifiedMidValue and clammy.relativeWeight < 11) or
+				(clammy.money >= modifiedHighValue and clammy.relativeWeight < 20) then
+				clammy.bucketColor = {1.0, 0.1, 0.0, 1.0};
+				if (Config.useStopTone[1] == true) then
+					clammy.stopSound = true;
+				end
+			else
+				clammy.bucketColor = {1.0, 1.0, 1.0, 1.0};
+				clammy.stopSound = false;
+			end
+		end
 	else
 		clammy.bucketColor = {1.0, 1.0, 1.0, 1.0};
 		clammy.stopSound = false;
@@ -221,7 +239,21 @@ func.renderEditor = function(clammy)
     if (not clammy.editorIsOpen[1]) then
         return clammy;
     end
-    imgui.SetNextWindowSize({ 500, 515, });
+	local settingsTabHeight = 400;
+	local settingsWindowHeight = 510;
+	if (Config.log[1] == true) then
+		settingsTabHeight = settingsTabHeight + 25;
+		settingsWindowHeight = settingsWindowHeight + 25;
+	end
+	if (Config.tone[1] == true) then
+		settingsTabHeight = settingsTabHeight + 25;
+		settingsWindowHeight = settingsWindowHeight + 25;
+	end
+	if (Config.autoResetLog[1] == true) then
+		settingsTabHeight = settingsTabHeight + 50;
+		settingsWindowHeight = settingsWindowHeight + 50;
+	end
+    imgui.SetNextWindowSize({ 500, settingsWindowHeight, });
     imgui.SetNextWindowSizeConstraints({ 0, 0, }, { FLT_MAX, FLT_MAX, });
     if (imgui.Begin('Clammy##Config', clammy.editorIsOpen)) then
 
@@ -244,11 +276,11 @@ func.renderEditor = function(clammy)
 
         if (imgui.BeginTabBar('##clammy_tabbar', ImGuiTabBarFlags_NoCloseWithMiddleMouseButton)) then
             if (imgui.BeginTabItem('General', nil)) then
-                func.renderGeneralConfig();
+                func.renderGeneralConfig(settingsTabHeight);
                 imgui.EndTabItem();
             end
             if (imgui.BeginTabItem('Items', nil)) then
-                func.renderItemListConfig();
+                func.renderItemListConfig(settingsTabHeight);
                 imgui.EndTabItem();
             end
             imgui.EndTabBar();
@@ -259,15 +291,29 @@ func.renderEditor = function(clammy)
     return clammy;
 end
 
-func.renderGeneralConfig = function()
+func.renderGeneralConfig = function(settingsTabHeight)
     imgui.Text('General Settings');
-    imgui.BeginChild('settings_general', { 0, 400, }, true);
+    imgui.BeginChild('settings_general', { 0, settingsTabHeight, }, true);
         imgui.Checkbox('Items in Bucket', Config.showItems);
         imgui.ShowHelp('Toggles whether items in current bucket should be shown.');
         imgui.Checkbox('Show Session Info', Config.showSessionInfo);
         imgui.ShowHelp('Toggles whether total clamming value, gil earned per hour, and buckets purchased should be shown.');
 		imgui.Checkbox('Split gil/hr and total session value by Vendor/AH', Config.splitItemsBySellType);
 		imgui.ShowHelp('Toggles whether session info should show split between items sold to vendor and items sold to AH.');
+        imgui.Checkbox('Track Moon Info', Config.trackMoonPhase);
+        imgui.ShowHelp('Toggles if moon phase should be tracked and shown.');
+        imgui.Checkbox('Set Weight Color Based On Value', Config.colorWeightBasedOnValue);
+        imgui.ShowHelp('Toggles if the weight in the window should be based on value of the bucket.');
+		imgui.Checkbox('Show Profit', Config.subtractBucketCostFromGilEarned);
+		imgui.ShowHelp('Subtract cost of buckets from total clamming value amount.');
+		imgui.Checkbox('Show Time per Bucket', Config.showAverageTimePerBucket);
+		imgui.ShowHelp('Calculate and show average time per bucket received.');
+		imgui.Checkbox('Show % chance bucket break', Config.showPercentChanceToBreak);
+		imgui.ShowHelp('Calculates the chance that the next clamming attempt will break your bucket.');
+		imgui.Checkbox('No clammy outside the bay', Config.hideInDifferentZone);
+        imgui.ShowHelp('Toggles if the clammy window should hide if not in Bibiki Bay.');
+		imgui.Checkbox('Always Stop After 3rd Bucket', Config.alwaysStopAtThirdBucket);
+		imgui.ShowHelp('Always turns the bucket color red at 131 or more weight.');
 		imgui.Checkbox('Log Results', Config.log);
         imgui.ShowHelp('Toggles if Clammy should create a log file.');
 		if (Config.log[1] == true) then
@@ -280,18 +326,14 @@ func.renderGeneralConfig = function()
 			imgui.SetCursorPosX(20); imgui.Checkbox('Stop Tone', Config.useStopTone);
 			imgui.ShowHelp('Play separate tone when at recommended turn in weight.')
 		end
-        imgui.Checkbox('Track Moon Info', Config.trackMoonPhase);
-        imgui.ShowHelp('Toggles if moon phase should be tracked and shown.');
-        imgui.Checkbox('Set Weight Color Based On Value', Config.colorWeightBasedOnValue);
-        imgui.ShowHelp('Toggles if the weight in the window should be based on value of the bucket.');
-        imgui.Checkbox('No clammy outside the bay', Config.hideInDifferentZone);
-        imgui.ShowHelp('Toggles if the clammy window should hide if not in Bibiki Bay.');
-		imgui.Checkbox('Show Profit', Config.subtractBucketCostFromGilEarned);
-		imgui.ShowHelp('Subtract cost of buckets from total clamming value amount.');
-		imgui.Checkbox('Show Time per Bucket', Config.showAverageTimePerBucket);
-		imgui.ShowHelp('Calculate and show average time per bucket received.');
-		imgui.Checkbox('Show % chance bucket break', Config.showPercentChanceToBreak);
-		imgui.ShowHelp('Calculates the chance that the next clamming attempt will break your bucket.');
+		imgui.Checkbox('Auto Reset Log', Config.autoResetLog);
+		imgui.ShowHelp('Automatically resets log file after no clamming actions are taken for some time.');
+		if (Config.autoResetLog[1] == true) then
+			imgui.SetCursorPosX(20); imgui.Checkbox('Reset Session', Config.resetFullSession);
+			imgui.ShowHelp('Reset just log file or full session.');
+			imgui.SetCursorPosX(20); imgui.SetNextItemWidth(100); imgui.InputInt('Minutes Before Reset', Config.minutesBeforeAutoReset);
+			imgui.ShowHelp('Time in minutes before automatically resetting log file.');
+		end
 		imgui.SetNextItemWidth(100);
 		imgui.InputInt('High value amount', Config.highValue);
 		imgui.ShowHelp('Indicates when bucket weight turns red at less than 20 ponze of space remaining.');
@@ -304,8 +346,8 @@ func.renderGeneralConfig = function()
     imgui.EndChild();
 end
 
-func.renderItemListConfig = function()
-    imgui.BeginChild("settings_items", {0, 375, }, true);
+func.renderItemListConfig = function(settingsTabHeight)
+    imgui.BeginChild("settings_items", {0, settingsTabHeight, }, true);
 		imgui.Text('    Item Value:');
 		imgui.ShowHelp('Set sale price of item.');
 		imgui.SameLine();
@@ -457,6 +499,7 @@ end
 
 func.resetSession = function(clammy)
 	clammy.startingTime = os.clock();
+	clammy.lastClammingAction = os.clock();
 	clammy.fileName = ('log_%s.txt'):fmt(os.date('%Y_%m_%d__%H_%M_%S'));
 	clammy.filePathBroken =('log_broken_%s.txt'):fmt(os.date('%Y_%m_%d__%H_%M_%S'));
 	clammy.filePath = clammy.fileDir .. clammy.fileName;
@@ -471,6 +514,27 @@ func.resetSession = function(clammy)
 	clammy.sessionValueAH = 0;
 	clammy.sessionValueNPC = 0;
 	clammy.bucketIsBroke = false;
+	return clammy;
+end
+
+func.sessionTimeout = function(clammy)
+	if(Config.resetFullSession[1] == true) then
+		clammy.bucketsPurchased = 0;
+		clammy.bucketsReceived = 0;
+		clammy.sessionValue = 0;
+		clammy.sessionValueAH = 0;
+		clammy.sessionValueNPC = 0;
+		clammy.bucketIsBroke = false;
+	end
+	clammy.startingTime = os.clock();
+	clammy.lastClammingAction = os.clock();
+	clammy.fileName = ('log_%s.txt'):fmt(os.date('%Y_%m_%d__%H_%M_%S'));
+	clammy.filePathBroken =('log_broken_%s.txt'):fmt(os.date('%Y_%m_%d__%H_%M_%S'));
+	clammy.filePath = clammy.fileDir .. clammy.fileName;
+	clammy.gilPerHour = 0;
+	clammy.gilPerHourMinusBucket = 0;
+	clammy.gilPerHourAH = 0;
+	clammy.gilPerHourNPC = 0;
 	return clammy;
 end
 
@@ -678,6 +742,15 @@ func.handleChatCommands = function(args, clammy)
         return clammy;
     end
 
+	if (args[2]:any('debug')) then
+		if(args[3]:any('additem')) then
+			
+		elseif (args[3]:any('setbucketsize')) then
+			clammy.bucketSize = tonumber(args[4]);
+		end
+		return clammy;
+	end
+
     if (args[2]:any('showvalue')) then --turns loggin on/off
         func.toggleShowValue(args[3])
         return clammy;
@@ -724,6 +797,7 @@ end
 
 func.handleTextIn = function(e, clammy)
 
+	local now = os.clock();
     local weightColor = {
         {diff=200, color={1.0, 1.0, 1.0, 1.0}},
         {diff=35, color={1.0, 1.0, 0.8, 1.0}},
@@ -738,6 +812,7 @@ func.handleTextIn = function(e, clammy)
 		clammy = func.emptyBucket(clammy, true, false);
 		clammy.bucketColor = {1.0, 1.0, 1.0, 1.0};
 		clammy = func.calculateTimePerBucket(clammy);
+		clammy.lastClammingAction = now;
 		return clammy;
 	end
 
@@ -757,6 +832,8 @@ func.handleTextIn = function(e, clammy)
 		clammy.bucketColor = {1.0, 1.0, 1.0, 1.0};
 		clammy = func.calculateTimePerBucket(clammy);
 		clammy.bucketStartTime = os.clock();
+		clammy.relativeWeight = clammy.relativeWeight + 50;
+		clammy.lastClammingAction = now;
 		return clammy;
 	end
 
@@ -772,6 +849,7 @@ func.handleTextIn = function(e, clammy)
 		for idx,citem in ipairs(clammy.items) do
 			if (string.match(string.lower(e.message), string.lower(citem.item)) ~= nil) then
 				clammy = func.writeBucket(clammy, citem);
+				clammy.lastClammingAction = now;
 				clammy.weight = clammy.weight + citem.weight;
 				clammy.money = clammy.money + citem.gil[1];
 				clammy.bucket[idx] = clammy.bucket[idx] + 1;
@@ -786,7 +864,7 @@ func.handleTextIn = function(e, clammy)
 				else
 					clammy.relativeWeight = clammy.bucketSize - clammy.weight;
 				end
-
+				clammy.hasBucket = true;
 				clammy.playTone = true;
 
 				if (Config.log[1] == true) and (Config.legacyLog[1] == true) then
@@ -804,6 +882,13 @@ func.renderClammy = function(clammy)
 	local windowSize = 300;
     imgui.SetNextWindowBgAlpha(0.8);
     imgui.SetNextWindowSize({ windowSize, -1, }, ImGuiCond_Always);
+	local now = os.clock();
+	local timeBeforeReset = now - (Config.minutesBeforeAutoReset[1] * 60);
+	if (clammy.lastClammingAction < timeBeforeReset) and
+		(Config.autoResetLog[1] == true) and
+		(clammy.hasBucket == false) then
+		clammy = func.sessionTimeout(clammy);
+	end
 
 	if (imgui.Begin('Clammy', true, bit.bor(ImGuiWindowFlags_NoDecoration))) then
 
