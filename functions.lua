@@ -108,7 +108,11 @@ func.calculateChanceOfBreak = function(clammy, remainingWeight)
 	local sevenWeightPercent = 0;
 	local elevenWeightPercent = 0;
 	local twentyWeightPercent = 0;
-	for _, item in ipairs(Config.items) do
+	local tableToUse = Config.items;
+	if (clammy.hasHQLegs == false) then
+		tableToUse = const.clammingRarityNoHQGear;
+	end
+	for _, item in ipairs(tableToUse) do
 		if (item.weight == 20) then
 			twentyWeightPercent = twentyWeightPercent + item.rarity[1];
 		elseif (item.weight == 11) then
@@ -239,8 +243,8 @@ func.renderEditor = function(clammy)
     if (not clammy.editorIsOpen[1]) then
         return clammy;
     end
-	local settingsTabHeight = 400;
-	local settingsWindowHeight = 510;
+	local settingsTabHeight = 420;
+	local settingsWindowHeight = 535;
 	if (Config.log[1] == true) then
 		settingsTabHeight = settingsTabHeight + 25;
 		settingsWindowHeight = settingsWindowHeight + 25;
@@ -310,6 +314,8 @@ func.renderGeneralConfig = function(settingsTabHeight)
 		imgui.ShowHelp('Calculate and show average time per bucket received.');
 		imgui.Checkbox('Show % chance bucket break', Config.showPercentChanceToBreak);
 		imgui.ShowHelp('Calculates the chance that the next clamming attempt will break your bucket.');
+		imgui.Checkbox('Show equipment status', Config.checkEquippedItem);
+		imgui.ShowHelp('Shows whether you are wearing the HQ clamming set.');
 		imgui.Checkbox('No clammy outside the bay', Config.hideInDifferentZone);
         imgui.ShowHelp('Toggles if the clammy window should hide if not in Bibiki Bay.');
 		imgui.Checkbox('Always Stop After 3rd Bucket', Config.alwaysStopAtThirdBucket);
@@ -524,6 +530,9 @@ func.sessionTimeout = function(clammy)
 		clammy.sessionValue = 0;
 		clammy.sessionValueAH = 0;
 		clammy.sessionValueNPC = 0;
+		clammy.trueSessionValue = 0;
+		clammy.trueSessionValueNPC = 0;
+		clammy.trueSessionValueAH = 0;
 		clammy.bucketIsBroke = false;
 	end
 	clammy.startingTime = os.clock();
@@ -535,6 +544,39 @@ func.sessionTimeout = function(clammy)
 	clammy.gilPerHourMinusBucket = 0;
 	clammy.gilPerHourAH = 0;
 	clammy.gilPerHourNPC = 0;
+	clammy.bucketAverageTime = 0;
+	clammy.bucketTimeWith = 0;
+	return clammy;
+end
+
+func.getCurrentEquip = function(clammy)
+    local inv = AshitaCore:GetMemoryManager():GetInventory();
+    local bodyEquip = inv:GetEquippedItem(5);
+    local bodyIndex = bit.band(bodyEquip.Index, 0x00FF);
+    local bodyContainer = bit.band(bodyEquip.Index, 0xFF00) / 256;
+    local bodyItem = inv:GetContainerItem(bodyContainer, bodyIndex);
+	local bodyItemId = bodyItem.Id;
+
+	clammy.hasHQBody = false;
+	clammy.bodyItemId = bodyItemId;
+
+	local legEquip = inv:GetEquippedItem(7);
+	local legIndex = bit.band(legEquip.Index, 0x00FF);
+	local legContainer = bit.band(legEquip.Index, 0xFF00) / 256;
+	local legItem = inv:GetContainerItem(legContainer, legIndex);
+	local legItemId = legItem.Id;
+
+	clammy.hasHQLegs = false;
+	clammy.legItemId = legItemId;
+
+	for _, item in ipairs(const.hqGearIndexes) do
+		if item.id == bodyItemId then
+			clammy.hasHQBody = true;
+		end
+		if item.id == legItemId then
+			clammy.hasHQLegs = true;
+		end
+	end
 	return clammy;
 end
 
@@ -882,6 +924,7 @@ func.renderClammy = function(clammy)
 	local windowSize = 300;
     imgui.SetNextWindowBgAlpha(0.8);
     imgui.SetNextWindowSize({ windowSize, -1, }, ImGuiCond_Always);
+	clammy = func.getCurrentEquip(clammy);
 	local now = os.clock();
 	local timeBeforeReset = now - (Config.minutesBeforeAutoReset[1] * 60);
 	if (clammy.lastClammingAction < timeBeforeReset) and
@@ -914,7 +957,7 @@ func.renderClammy = function(clammy)
 		imgui.SetCursorPosX(imgui.GetCursorPosX() + imgui.GetColumnWidth() - imgui.GetStyle().FramePadding.x - imgui.CalcTextSize("[999]"));
 		local cdTime = math.floor(clammy.cooldown - os.clock());
 		if (Config.useStopTone[1] == true and clammy.stopSound == true) then
-			cdTime = cdTime - 8;
+			cdTime = cdTime - 9;
 		end
 		if (cdTime <= 0) then
 			imgui.TextColored({ 0.5, 1.0, 0.5, 1.0 }, "  [*]");
@@ -940,7 +983,6 @@ func.renderClammy = function(clammy)
 		if (Config.showValue[1] == true) then
 			imgui.Text("Estimated Value: " .. func.formatInt(clammy.money));
 		end
-
 		local textColor = {0.0, 0.75, 0.60, 1};
 		if (Config.showSessionInfo[1] == true) then
 			if Config.subtractBucketCostFromGilEarned[1] == true then
@@ -1010,16 +1052,32 @@ func.renderClammy = function(clammy)
 			imgui.Text("Current moon phase percentage is: " .. clammy.moonTable.moonPercent .. "%");
 		end
 
+		if (Config.checkEquippedItem[1] == true) then
+			imgui.Separator();
+			imgui.Text('HQ legs: ') imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize('HQ legs:  '));
+			if clammy.hasHQLegs == true then
+				imgui.TextColored({0, 1, 0, 1}, tostring(clammy.hasHQLegs)); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize('HQ legs:  '.. tostring(clammy.hasHQLegs)));
+			else
+				imgui.TextColored({1, 0, 0, 1}, tostring(clammy.hasHQLegs)); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize('HQ legs:  '.. tostring(clammy.hasHQLegs)));
+			end
+			imgui.Text(' HQ body: ');  imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize('HQ legs:  '.. tostring(clammy.hasHQLegs) .. ' HQ body: '));
+			if clammy.hasHQBody == true then
+				imgui.TextColored({0, 1, 0, 1}, tostring(clammy.hasHQBody));
+			else
+				imgui.TextColored({1, 0, 0, 1}, tostring(clammy.hasHQBody));
+			end
+		end
+
 		if (Config.showItems[1] == true) then
 			if clammy.showItemSeparator == true then
 				imgui.Separator();
 			end
-			for idx,citem in ipairs(clammy.items) do
+			for idx,citem in ipairs(Config.items) do
 				if (clammy.bucket[idx] ~= 0) then
 					clammy.showItemSeparator = true;
-					imgui.Text(" - " .. clammy.items[idx].item .. " [" .. clammy.bucket[idx] .. "]");
+					imgui.Text(" - " .. Config.items[idx].item .. " [" .. clammy.bucket[idx] .. "]");
 					imgui.SameLine();
-					local valTxt = "(" .. func.formatInt(clammy.items[idx].gil[1] * clammy.bucket[idx]) .. ")"
+					local valTxt = "(" .. func.formatInt(Config.items[idx].gil[1] * clammy.bucket[idx]) .. ")"
 					local x, _  = imgui.CalcTextSize(valTxt);
 					imgui.SetCursorPosX(imgui.GetCursorPosX() + imgui.GetColumnWidth() - x - imgui.GetStyle().FramePadding.x);
 					imgui.Text(valTxt);
