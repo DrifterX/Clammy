@@ -55,6 +55,7 @@ local defaultConfig = T{
 	legacyLog = T{ false, },
 	alwaysStopAtThirdBucket = T{ true, },
 	checkEquippedItem = T{ true, },
+	windowScaling = T{ 1.0, },
 }
 Config = Settings.load(defaultConfig);
 

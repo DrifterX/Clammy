@@ -156,10 +156,14 @@ func.calculateChanceOfBreak = function(clammy, remainingWeight)
 		};
 	end
 	if (clammy.bucketSize == 200) then
+		local clammingIncidentModifier = 0.9;
+		if (clammy.hasHQBody == true) then
+			clammingIncidentModifier = 0.95;
+		end
 		if (returnData.percentWeight == 100) then
 			returnData.percentWeight = 100;
 		else
-			returnData.percentWeight = 1 - ((1 - returnData.percentWeight) * 0.95);
+			returnData.percentWeight = 1 - ((1 - returnData.percentWeight) * clammingIncidentModifier);
 		end
 	end
 	if (returnData.percentWeight == 0) or (returnData.percentWeight == 100) then
@@ -182,9 +186,13 @@ func.calcRedBucket = function(clammy)
 				clammy.stopSound = true;
 			end
 		elseif (Config.alwaysStopAtThirdBucket[1] == false) then
-			local modifiedLowValue = math.floor(Config.lowValue[1] * 0.95);
-			local modifiedMidValue = math.floor(Config.midValue[1] * 0.95);
-			local modifiedHighValue = math.floor(Config.highValue[1] * 0.95);
+			local clammingIncidentModifier = 0.9;
+			if (clammy.hasHQBody == true) then
+				clammingIncidentModifier = 0.95;
+			end
+			local modifiedLowValue = math.floor(Config.lowValue[1] * clammingIncidentModifier);
+			local modifiedMidValue = math.floor(Config.midValue[1] * clammingIncidentModifier);
+			local modifiedHighValue = math.floor(Config.highValue[1] * clammingIncidentModifier);
 			if (clammy.relativeWeight < 6) or
 				(clammy.money >= modifiedLowValue and clammy.relativeWeight < 7) or
 				(clammy.money >= modifiedMidValue and clammy.relativeWeight < 11) or
@@ -243,8 +251,8 @@ func.renderEditor = function(clammy)
     if (not clammy.editorIsOpen[1]) then
         return clammy;
     end
-	local settingsTabHeight = 420;
-	local settingsWindowHeight = 535;
+	local settingsTabHeight = 445;
+	local settingsWindowHeight = 560;
 	if (Config.log[1] == true) then
 		settingsTabHeight = settingsTabHeight + 25;
 		settingsWindowHeight = settingsWindowHeight + 25;
@@ -298,6 +306,8 @@ end
 func.renderGeneralConfig = function(settingsTabHeight)
     imgui.Text('General Settings');
     imgui.BeginChild('settings_general', { 0, settingsTabHeight, }, true);
+		imgui.SliderFloat('Window Scale', Config.windowScaling, 0.1, 2.0, '%.2f');
+		imgui.ShowHelp('Scale the window bigger/smaller.');
         imgui.Checkbox('Items in Bucket', Config.showItems);
         imgui.ShowHelp('Toggles whether items in current bucket should be shown.');
         imgui.Checkbox('Show Session Info', Config.showSessionInfo);
@@ -921,7 +931,7 @@ func.handleTextIn = function(e, clammy)
 end
 
 func.renderClammy = function(clammy)
-	local windowSize = 300;
+	local windowSize = (300 * Config.windowScaling[1]);
     imgui.SetNextWindowBgAlpha(0.8);
     imgui.SetNextWindowSize({ windowSize, -1, }, ImGuiCond_Always);
 	clammy = func.getCurrentEquip(clammy);
@@ -935,6 +945,8 @@ func.renderClammy = function(clammy)
 
 	if (imgui.Begin('Clammy', true, bit.bor(ImGuiWindowFlags_NoDecoration))) then
 
+		local normalFontSize = 1 * Config.windowScaling[1];
+		local enlargedFontSize = 1.3 * Config.windowScaling[1];
 		if (clammy.hasBucket == true) then
 			imgui.TextColored({0.0, 1.0, 0.0, 1.0}, "Bucket")
 		elseif(clammy.bucketIsBroke == true) then
@@ -949,10 +961,10 @@ func.renderClammy = function(clammy)
 		imgui.SameLine()
 		imgui.Text("Weight [" .. clammy.bucketSize .. "]:");
 		imgui.SameLine();
-		imgui.SetWindowFontScale(1.3);
-		imgui.SetCursorPosY(imgui.GetCursorPosY()-2);
+		imgui.SetWindowFontScale(enlargedFontSize);
+		imgui.SetCursorPosY(imgui.GetCursorPosY() - (2 * Config.windowScaling[1]));
 		imgui.TextColored(clammy.bucketColor, tostring(clammy.weight));
-		imgui.SetWindowFontScale(1.0);
+		imgui.SetWindowFontScale(normalFontSize);
 		imgui.SameLine();
 		imgui.SetCursorPosX(imgui.GetCursorPosX() + imgui.GetColumnWidth() - imgui.GetStyle().FramePadding.x - imgui.CalcTextSize("[999]"));
 		local cdTime = math.floor(clammy.cooldown - os.clock());
@@ -967,8 +979,8 @@ func.renderClammy = function(clammy)
 		end
 		if (Config.showPercentChanceToBreak[1] == true) then
 			local bucketBreakChance = func.calculateChanceOfBreak(clammy, (clammy.bucketSize - clammy.weight));
-			imgui.Text("Percent chance to break: "); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Percent chance to break:  ")); imgui.SetWindowFontScale(1.3); imgui.SetCursorPosY(imgui.GetCursorPosY()-2);
-			imgui.TextColored(bucketBreakChance.color, bucketBreakChance.percentWeight); imgui.SameLine(); imgui.SetWindowFontScale(1.0); imgui.SetCursorPosY(imgui.GetCursorPosY()+2);
+			imgui.Text("Percent chance to break: "); imgui.SameLine(); imgui.SetCursorPosX(imgui.CalcTextSize("Percent chance to break:  ")); imgui.SetWindowFontScale(enlargedFontSize); imgui.SetCursorPosY(imgui.GetCursorPosY() - (2 * Config.windowScaling[1]));
+			imgui.TextColored(bucketBreakChance.color, bucketBreakChance.percentWeight); imgui.SameLine(); imgui.SetWindowFontScale(normalFontSize); imgui.SetCursorPosY(imgui.GetCursorPosY() + (2 * Config.windowScaling[1]));
 			if (string.len(bucketBreakChance.percentWeight) == 1) then
 				imgui.SetCursorPosX(imgui.CalcTextSize("Percent chance to break:   " .. bucketBreakChance.percentWeight));
 			elseif (string.len(bucketBreakChance.percentWeight) == 3) then
